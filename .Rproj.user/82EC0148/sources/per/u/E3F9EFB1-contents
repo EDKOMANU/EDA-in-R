@@ -1,0 +1,10 @@
+data_new<- data |> 
+  filter(toilet!="dejury"| water!= "dejury") |> # filter out those de jury people llevaing the households with those characteristics
+  select(cluster_id, hh_id, toilet, water) #......variables u need
+  
+data_new<- distinct(data_new, cluster_id, hh_id, .keep_all=T)  
+
+  # now we merge the data_new to the data
+data<-data |> 
+  left_join(data_new, by=c(cluster_id, hh_id)) 
+#left join so that we dont loose any observation in our old dataset incase there are observations who didnt match corretly
