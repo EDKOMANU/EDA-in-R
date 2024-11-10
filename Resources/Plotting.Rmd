@@ -1,0 +1,169 @@
+---
+title: "Ploting"
+author: "Mr_Ed"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Packages and Datasets
+
+```{r}
+library(tidyverse)
+library(ggridges)
+library(readxl)
+
+setwd("~/Martin/Martin")
+
+
+
+#Setting region color codes
+region_colors<-c(
+  "Ahafo" <- "#4B644B",
+  "Ashanti" <- "#7D96AF",
+  "Bono" <- "#EBA07E",
+  "Bono East" <- "#09979B",
+  "Central" <- "#EA879C",
+  "Eastern"<- "#E5B9AD",
+  "Greater Accra" <- "#CC9B7A",
+  "North East" <- "#FDD835",
+  "Northern" <- "#0070C0",
+  
+  "Oti" <- "#AE2B47",
+  "Savannah" <- "#F94240",
+  "Upper East"<- "#903000",
+  "Upper West" <- "#0F3B6C",
+  "Volta" <- "#59A77F",
+  "Western" <- "#FDAE6B",
+  "Western North" <- "#B173A0"
+)
+
+Age_at_first_sex_females_charts <- read_excel("chart/Age at first sex females charts.xlsx")
+
+Age_at_first_sex_males_charts <- read_excel("chart/Age at first sex males charts.xlsx") |> 
+  rename(District = distcode)
+
+Breast_cancer_charts <- read_excel("chart/Breast cancer charts.xlsx") |> 
+  rename(District = distcode)
+
+Charts_Multiple_sexual_partners_females <- read_excel("chart/Charts_Multiple sexual partners females.xlsx")|> 
+  rename(District = distcode)
+
+Female_Alcohol_Charts <- read_excel("chart/Female Alcohol Charts.xlsx")
+
+Multiple_sexual_partners_Males_charts <- read_excel("chart/Multiple sexual partners Males charts.xlsx")
+
+New_Male_Alcohol_Charts <- read_excel("chart/New Male Alcohol Charts.xlsx")
+
+Stool_disposal <- read_excel("chart/Stool disposal.xlsx")|> 
+  rename(District = distcode)
+
+Cervical_cancer_charts <- read_excel("chart/Cervical cancer charts.xlsx")
+
+
+
+
+
+
+
+```
+
+Define a list of the datasets loaded
+
+```{r}
+data_vec<- list(Age_at_first_sex_females_charts, Age_at_first_sex_males_charts, Breast_cancer_charts, 
+             Charts_Multiple_sexual_partners_females, Female_Alcohol_Charts ,Multiple_sexual_partners_Males_charts, New_Male_Alcohol_Charts, 
+             Stool_disposal, Cervical_cancer_charts)
+```
+
+## Data Manipulation
+
+## Looping Over the list created
+
+Define a function to be applied to the list objects
+
+```{r}
+data_vec_cleaned <- lapply(data_vec, function(d) {
+  
+    d <-d|>
+      select(Region, District, Estimates = contains("Estimate")) |> 
+      mutate(across(where(is.character), str_trim)) |>
+      mutate(Region= ifelse(Region == "Upper east", "Upper East", Region), 
+             Region= ifelse(Region == "Tamale", "Northern", Region)) |> 
+  group_by(Region) |> 
+  mutate(IQR = IQR(Estimates)) |> 
+  ungroup() 
+  })
+
+
+```
+
+##Plotting
+
+```{r}
+plots <- lapply(data_vec_cleaned, function(d) {
+  
+  plot <-d|>
+    ggplot( aes(x = Estimates, y =reorder(Region, IQR), fill = Region, colour = Region)) +
+    geom_density_ridges(scale = 1, rel_min_height = 0.01) +
+    scale_x_continuous(d$Estimates, limits = c(0, max(d$Estimates)+20))+
+    stat_summary(fun = mean,geom = "text", aes(label=round(after_stat(y),2)), size=3, vjust = -0.5, col="white")+
+    scale_fill_manual(values = region_colors) +
+    
+    theme_ridges() +
+    theme(legend.position = 'none', 
+          axis.title = element_blank(), 
+          axis.text = element_text(size = 10, face = "bold") 
+          ) +
+    
+    
+    geom_label(
+      
+      aes(x = max(Estimates)+10, y = Region, label = paste0("IQR: ", scales::percent( IQR/100, accuracy = 0.01, suffix = ""))), 
+      hjust = 0,
+      size = 5,
+      color = "white",
+      label.size = 0.25,
+    ) +
+    
+    geom_jitter(aes(x = Estimates, colour = Region), size = 0.5, width = 0.3, height = 0.1) +
+    scale_color_manual(values = region_colors) +
+    theme(panel.grid.major.x = element_blank())
+  
+  
+})
+```
+
+
+``` {r }
+
+plots
+
+```
+```
+## Saving the outputs
+
+define the names of the plots
+
+```{r warning=FALSE}
+names(plots) <- c("Age_at_first_sex_females_charts", "Age_at_first_sex_males_charts", "Breast_cancer_charts", 
+  "Charts_Multiple_sexual_partners_females", "Female_Alcohol_Charts" ,"Multiple_sexual_partners_Males_charts", "New_Male_Alcohol_Charts", 
+  "Stool_disposal", "Cervical_cancer_charts")
+
+
+# Save each plot with its specific name
+lapply(names(plots), function(name) {
+  # Retrieve the plot
+  plot <- plots[[name]]
+  
+  # Define the filename with the plot's specific name
+  file_path <- file.path("chart", paste0("plot_", name, ".jpg"))
+  
+  # Save the plot
+  ggsave(filename = file_path, plot = plot, width = 10, height = 8)
+})  
+
+```
