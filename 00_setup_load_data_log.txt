@@ -1,0 +1,5 @@
+2025-06-21 11:18:19.218205: --- Script 00_setup_load_data.R started (v4_verify_rds_and_install_pkgs) ---
+2025-06-21 11:18:19.253552: Using R library paths: /home/jules/R/library, /usr/local/lib/R/site-library, /usr/lib/R/site-library, /usr/lib/R/library
+2025-06-21 11:18:19.255371: Ensuring all required packages for the project pipeline are installed and loadable...
+2025-06-21 11:18:19.261442: Checking package: tidyverse for project pipeline dependency
+2025-06-21 11:18:19.276339: Package tidyverse is already installed.
